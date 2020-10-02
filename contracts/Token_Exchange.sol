@@ -60,20 +60,21 @@ contract Token_exchange{
 
 
     function registerRequest(address _tokenToSell , uint256 _amount ,uint256 _quantity ,askingValueForm _form, uint256 _askingValue , address _tokenToExchange) external returns(uint256 id){
-        require(Address.isContract(msg.sender),"Seller cannot be a contract");
+        require(!Address.isContract(msg.sender),"Seller cannot be a contract");
         sellRequest memory request;
         request.tokenToSell=_tokenToSell;
         request.amount=_amount;
-        if(_form==askingValueForm.TOKEN){
-            request.tokenToExchange=_tokenToExchange; 
-        }
+  
+        request.tokenToExchange=_tokenToExchange; 
+        
 
-        request.askingValue=_askingValue;
+        request.askingValue=SafeMath.mul(_askingValue,1000000000000000000);
         request.seller=msg.sender;
         request.status=requestStatus.FORSALE;
+        request.quantity=_quantity;
         sellRequests[sellid_counter]=request;
         IERC20 tokenAddress = IERC20(_tokenToSell);
-        request.quantity=_quantity;
+        
         tokenAddress.transferFrom(msg.sender,address(this),(SafeMath.mul(_amount,_quantity)));
 
         emit sellRequestAltered(sellid_counter,_tokenToSell , _amount,_quantity , _form, _askingValue , _tokenToExchange , msg.sender , request.status);
@@ -82,17 +83,39 @@ contract Token_exchange{
         return (SafeMath.sub(sellid_counter,1));
     }
 
-    function recieveAssets(uint256 _sellid) public{
+
+    function registerRequest(address _tokenToSell , uint256 _amount ,uint256 _quantity ,askingValueForm _form, uint256 _askingValue) external returns(uint256 id){
+        require(Address.isContract(msg.sender)==false,"Seller cannot be a contract");
+        sellRequest memory request;
+        request.tokenToSell=_tokenToSell;
+        request.amount=_amount;
+
+
+        request.askingValue=SafeMath.mul(_askingValue,1000000000000000000);
+        request.seller=msg.sender;
+        request.status=requestStatus.FORSALE;
+        request.quantity=_quantity;
+        sellRequests[sellid_counter]=request;
+        
+        IERC20 tokenAddress = IERC20(_tokenToSell);
+        
+        tokenAddress.transferFrom(msg.sender,address(this),(SafeMath.mul(_amount,_quantity)));
+
+        emit sellRequestAltered(sellid_counter,_tokenToSell , _amount,_quantity , _form, _askingValue , address(0x0) , msg.sender , request.status);
+        sellid_counter=SafeMath.add(sellid_counter,1);
+
+        return (SafeMath.sub(sellid_counter,1));
+    }
+
+    function recieveAssets(uint256 _sellid) public {
         address seller=sellRequests[_sellid].seller;
-        address buyer=acceptRequests[_sellid].buyer;
         IERC20 tokenToSell=IERC20(sellRequests[_sellid].tokenToSell);
         uint256 amount=sellRequests[_sellid].amount;
-
         tokenToSell.transfer(msg.sender,amount);
 
     }
 
-    function buySellRequest(uint256 _sellid ) external returns (uint256){
+    function buySellRequest(uint256 _sellid ) payable external returns (uint256){
         require(sellRequests[_sellid].status==requestStatus.FORSALE,"This Sell Request is no longer for sale");
         require(msg.sender!=sellRequests[_sellid].seller,"Seller cannot Accept his own offer");
         require(!Address.isContract(msg.sender),"Offer cannot be accepted by a contract");
@@ -108,13 +131,10 @@ contract Token_exchange{
             }
         else{
             amount= sellRequests[_sellid].askingValue;
-            require(msg.sender.balance>=amount,"You dont have the funds to buy this token");
-            sellRequests[_sellid].seller.transfer(amount);
+            require(msg.value==amount,"You dont have the funds to buy this token");
+            sellRequests[_sellid].seller.call{value: msg.value}("");
             }
         
-        IERC20 tokenToSell=IERC20(sellRequests[_sellid].tokenToSell);
-        amount=sellRequests[_sellid].amount;
-        tokenToSell.transfer(msg.sender,amount);
 
         sellRequests[_sellid].quantity=SafeMath.sub(sellRequests[_sellid].quantity,1);
         if(sellRequests[_sellid].quantity<=0){
@@ -151,6 +171,7 @@ contract Token_exchange{
         require(msg.sender.balance>=_askingValue,"You do not have the funds to make such an offer");
         counterRequest memory request;
         request.sellRequestID=_sellid;
+        request.buyer=msg.sender;
         request.askingValue=_askingValue;
         request.comment=_comment;
         request.status=counterRequestStatus.PENDING;
@@ -170,7 +191,7 @@ contract Token_exchange{
         counterRequests[_id].status=counterRequestStatus.ACCEPTED;
         }
 
-    function buyCounterRequest(uint256 _id) external{
+    function buyCounterRequest(uint256 _id) external payable{
         uint256 _sellid = counterRequests[_id].sellRequestID;
         require(counterRequests[_id].status==counterRequestStatus.ACCEPTED,"Counter Request must be accepted");
         
@@ -197,8 +218,8 @@ contract Token_exchange{
             }
         else{
             amount= counterRequests[_sellid].askingValue;
-            require(msg.sender.balance>=amount,"You dont have the funds to buy this token");
-            sellRequests[_sellid].seller.transfer(amount);
+            require(msg.value>=amount,"You dont have the funds to buy this token");
+            sellRequests[_sellid].seller.call{value: msg.value}("");
             }
     
 
@@ -232,7 +253,7 @@ contract Token_exchange{
 
     function depositRequests(uint256 sell_id , uint256 quantity) external{
         require(sellRequests[sell_id].seller==msg.sender,"Only Seller of these requests can deposit Requests");
-        SafeMath.add(sellRequests[sell_id].quantity, quantity);
+        sellRequests[sell_id].quantity=SafeMath.add(sellRequests[sell_id].quantity, quantity);
         IERC20 tokenToSell = IERC20(sellRequests[sell_id].tokenToSell);
         uint256 amount=sellRequests[sell_id].amount;
         require(tokenToSell.balanceOf(msg.sender)>=SafeMath.mul(amount,quantity),"Seller must have the funds being put for sale");
