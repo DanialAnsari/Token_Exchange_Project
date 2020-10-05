@@ -17,6 +17,7 @@
     "typescript": "^4.0.3"
   },
   "devDependencies": {
+    "@openzeppelin/test-environment": "^0.1.5",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
     "chai": "^4.2.0",

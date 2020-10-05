@@ -69,7 +69,7 @@ contract Token_exchange is Initializable{
     event CounterOrderAltered(uint256 id , uint256 sell_id, uint256 _price  , string _comment , CounterOrderstatus _status);
 
 
-   function initialize() public initializer{
+   constructor() public{
          sellid_counter=0;
          buyid_counter=0;
          negotiate_counter=0;
@@ -106,6 +106,9 @@ contract Token_exchange is Initializable{
     }
 
 
+    function getQuantity(uint256 _sellid) public view returns(uint256){
+        return 3;
+    }
    
     function recieveAssets(uint256 _sellid) public {
         address seller=SellOrders[_sellid].seller;
