@@ -1,0 +1,19 @@
+{
+  "contracts": {},
+  "solidityLibs": {},
+  "proxies": {
+    "token_exchange_project/Token_exchange": [
+      {
+        "address": "0xEa063D6fc7036286C0a25414cE76a5f4B71e7a76",
+        "kind": "NonProxy",
+        "bytecodeHash": "1ba5f8a55d3a1586d4af408b12694da6bf1c9cd25373bfc6854e6828ba2e59b0"
+      },
+      {
+        "address": "0x7fda0CC0C570533A90Ff826fC7D92e5c8c14957E",
+        "kind": "NonProxy",
+        "bytecodeHash": "00f25b1572208db000ce7ab14807b062be2ec3c694fdc6fc05cd0e09ada07bee"
+      }
+    ]
+  },
+  "manifestVersion": "2.2"
+}

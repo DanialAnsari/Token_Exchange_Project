@@ -66,7 +66,7 @@ contract Token_exchange is Initializable{
 
     event AcceptOrderAltered(uint256 _id ,uint256 sell_id, address _buyer);
 
-    event CounterOrderAltered(uint256 id , uint256 sell_id, uint256 _price  , string _comment , CounterOrderstatus _status);
+    event CounterOrderAltered(uint256 id , uint256 sell_id, uint256 _price  , string _comment , CounterOrderstatus _status , address buyer);
 
 
    constructor() public{
@@ -180,7 +180,7 @@ contract Token_exchange is Initializable{
         Order.status=CounterOrderstatus.PENDING;
 
         CounterOrders[negotiate_counter]=Order;
-        emit CounterOrderAltered(negotiate_counter,_sellid, _price  , _comment , Order.status );
+        emit CounterOrderAltered(negotiate_counter,_sellid, _price  , _comment , Order.status,msg.sender );
         negotiate_counter++;
         return (negotiate_counter-1);
     }
@@ -192,6 +192,8 @@ contract Token_exchange is Initializable{
         address seller= SellOrders[sell_id].seller;
   
         CounterOrders[_id].status=CounterOrderstatus.ACCEPTED;
+
+    emit CounterOrderAltered(_id,sell_id, CounterOrders[_id].price  , CounterOrders[_id].comment , CounterOrders[_id].status,CounterOrders[_id].buyer  );
         }
 
     function buyCounterOrder(uint256 _id) external payable{
@@ -214,7 +216,7 @@ contract Token_exchange is Initializable{
             
             IERC20 tokenAddress=IERC20(SellOrders[_sellid].tokenToExchange);
             amount= CounterOrders[_sellid].price;
-            require(tokenAddress.balanceOf(msg.sender)>=amount,"You dont have the funds to buy this token");
+            require(msg.value>=amount,"You dont have the funds to buy this token");
             require(tokenAddress.allowance(msg.sender,address(this))>=amount,"Buyer needs to approve required tokens to contract first");
             tokenAddress.transferFrom(msg.sender,SellOrders[_sellid].seller,amount);
             }
@@ -230,7 +232,7 @@ contract Token_exchange is Initializable{
         //     SellOrders[sell_id].status=Orderstatus.CLOSED;
         // }
 
-        emit CounterOrderAltered(_id,_sellid, CounterOrders[_sellid].price  , CounterOrders[_id].comment , CounterOrders[_id].status );
+        emit CounterOrderAltered(_id,_sellid, CounterOrders[_id].price  , CounterOrders[_id].comment , CounterOrders[_id].status,CounterOrders[_id].buyer );
         emit SellOrderAltered(_sellid,SellOrders[_sellid].tokenToSell , SellOrders[_sellid].amount ,SellOrders[_sellid].quantity, SellOrders[_sellid].paymentOption, SellOrders[_sellid].price , SellOrders[_sellid].tokenToExchange ,SellOrders[_sellid].seller , SellOrders[_sellid].status);
     }
 
@@ -250,7 +252,7 @@ contract Token_exchange is Initializable{
             CounterOrders[sell_id].status=CounterOrderstatus.CANCELED;
         }
 
-         emit CounterOrderAltered(_id,sell_id, CounterOrders[_id].price  , CounterOrders[_id].comment , CounterOrders[_id].status );
+         emit CounterOrderAltered(_id,sell_id, CounterOrders[_id].price  , CounterOrders[_id].comment , CounterOrders[_id].status,CounterOrders[_id].buyer );
     }
 
     function increamentQuantity(uint256 sell_id , uint256 quantity) external{
